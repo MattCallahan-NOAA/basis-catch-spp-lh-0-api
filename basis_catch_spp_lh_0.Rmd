@@ -1,0 +1,286 @@
+---
+title: "BASIS survey: catch by species and life history stage with 0s"
+author: "Matt Callahan-AKFIN"
+date: "3/16/2022"
+output: word_document
+---
+
+<br>
+
+![](AKFIN_logo.png) 
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(flextable)
+library(tidyverse)
+tibble(Date=c(Sys.Date(),NA, NA), 
+                     Author=c("Matt Callahan","",""),
+                     Comments=c("Original version","",""),
+                     Version=c("1.0","",""))%>%
+  flextable()%>%
+  fit_to_width(max_width = 8.5)%>%
+  theme_box()%>%
+  bg(bg="light gray", part = "header")%>%
+  width(j=c("Date", "Author", "Version"), width =1.1)%>%
+  width(j="Comments", width=3)
+
+```
+\newpage
+
+
+
+## Subject
+The basis_catch web service provides BASIS survey catch level information by species, and life history stage from the AKFIN database 
+
+## Background 
+This query was designed so EMA scientists could easily share BASIS data without needing logins, VPN connections, etc. 
+
+Something about BASIS...
+
+## Data Sources
+This web service queries the basisfish_event, basisfish_catch, basisfish_lifehistorystage, basisfish_trawlgear, and basisfish_trawl_performance tables in the EMA schema. Data includes catches of zero. See below for query logic. 
+Look up optional TSN filter through 'https://apex.psmfc.org/akfin/data_marts/akmp/basis_tsn'
+
+<br>
+
+## Data Access URL
+**Base URL:** https://apex.psmfc.org/akfin/data_marts/akmp/basis_catch_spp_lh_0
+
+<br>
+
+
+**Parameters**
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+tibble(Parameter=c("startyear","endyear", "minlat", "maxlat", "tsn"), 
+                     Description=c("Specify start year","Specify end year", "Minimum latitude", "Maximum latitude", "Taxonomic Serial Number: https://apex.psmfc.org/akfin/data_marts/akmp/basis_tsn"),
+                     Requirement=c( "Optional", "Optional", "Optional", "Optional", "Optional"),
+                     Values=c("1996 to present","1996 to present", "38-73","38-73", "1602 distinct species as of Jan 2022"))%>%
+  flextable()%>%
+  fit_to_width(max_width = 8.5)%>%
+  theme_box()%>%
+  bg(bg="light gray", part = "header")%>%
+   set_table_properties(layout="autofit")
+
+```
+
+<br>
+
+**Example URLs:**
+
+<br>
+
+* Retrieve data for 2004 only: 
+https://apex.psmfc.org/akfin/data_marts/akmp/basis_catch_spp_lh_0?startyear=2004&endyear=2004
+
+* Retrieve data from 2004 above 60 degrees North: https://apex.psmfc.org/akfin/data_marts/akmp/basis_catch_spp_lh_0?startyear=2004&endyear=2004&minlat=60
+
+* Retrieve Pacific cod data from 2004 South of 60 degrees North:
+https://apex.psmfc.org/akfin/data_marts/akmp/basis_catch_spp_lh_0?startyear=2004&endyear=2004&maxlat=60&tsn=164711
+
+* Retrieve Pacific cod and pollock data from 2004 South of 60 degrees North:
+https://apex.psmfc.org/akfin/data_marts/akmp/basis_catch_spp_lh_0?startyear=2004&endyear=2004&maxlat=60&tsn=164711,934083
+
+
+## Data Download (R)
+The full dataset is >300,000 records and downloading it may take several minutes.
+
+```{r eval=FALSE, message=FALSE, warning=FALSE}
+#install packages if not already downloaded
+library(httr) #for accessing web services
+library(tidyverse) #for converting data into exportable data frame
+
+#full data download: This will take several minutes
+#Modify this url as desired for a custom data query.
+data<-httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/basis_catch_spp_lh_0'), 
+  type = "application/json") %>% 
+    bind_rows
+
+#Lookup Pacific cod tsn
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/basis_tsn'), 
+  type = "application/json") %>% 
+    bind_rows%>%
+  filter(COMMONNAME=="Pacific Cod")
+
+
+```
+
+
+## Field descriptions
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+tibble(Parameter=c("STATIONID", 
+                   "EVENTCODE", 
+                   "SAMPLEYEAR",
+                   "GEARCODE",
+                   "TRAWLPERFORMANCE_CODE",   
+                   "EQ_LATITUDE",             
+                   "EQ_LONGITUDE",            
+                   "HAVERSINEDISTANCE2",     
+                   "AVGNETHORIZONTALOPENING", 
+                   "EFFORT_AREA_KM2",        
+                   "TSN",                     
+                   "SPECIESNAME",  
+                   "LHSCODE",                 
+                   "GEAR_DESCRIPTION",        
+                   "TRAWLPERFORMANCE",        
+                   "LIFEHISTORY_STAGE",      
+                   "TOTALCATCHNUM",           
+                   "TOTALCATCHWT"  ), 
+                     Description=c("Unique Station Identifier: Concatenation of Year(4) VesselCode(2), CruiseNumber(2), and StationNumber(3)", 
+                                   "Code indicating order of events (begins at 03 for trawls)", 
+                                   "Year in which sampling occured.", 
+                                   "Code for gear used in trawl.  See TrawlGear Table.",
+                                    "Code indicating performance of trawl.  See TrawlPerformance table.",
+                                   "Latitude at which gear reached equilibrium and is considered fishing (Surface/MidWater) or time at which gear reached max depth and began retrieval (oblique)",
+                                   "Longitude at which gear reached equilibrium and is considered fishing (Surface/MidWater) or time at which gear reached max depth and began retrieval (oblique)",
+                                   "Great circle distance between two points, trawl start and end?",
+                                   "Average net width",
+                                   "Effort area in square km. The product of haversinedistance2 and avgnethorizontaldistance2 divided by 1000",
+                                   "Taxonomic serial number",
+                                   "Species common name",
+                                   "Two to four character code representing the life history stage of the fish (see Life History Stage table for allowable values).",
+                                   "Description of the gear type.",
+                                   "Description of TRAWLPERFORMANCE_Code",
+                                   "Description of LHSCODE",
+                                   "Counted or calculated total catch of the species/maturity in the trawl",
+                                   "Counted or calculated total weight (grams) of the species/maturity in the trawl.")
+                     )%>%
+  flextable()%>%
+  fit_to_width(max_width = 8.5)%>%
+  theme_box()%>%
+  bg(bg="light gray", part = "header")%>%
+   set_table_properties(layout="autofit")
+
+```
+
+
+
+
+## Source code
+Below is the sql code used in the web service.
+
+```{r eval=FALSE, message=FALSE, warning=FALSE}
+
+WITH speccatch
+     AS (  SELECT Event.StationID,
+                  Event.EventCode,
+                  Event.SampleYear,
+                  Event.GearCode,
+                  Event.TrawlPERformance,
+                  Event.EQ_LATITUDE,
+                  Event.EQ_LONGITUDE,
+                  EVENTEFFORT.HaversineDistance2,
+                  EVENTEFFORT.AvgNetHorizontalOpening,
+                  EVENTEFFORT.Effort_area_km2,
+                  to_char(species.tsn) as tsn,
+                  species.commonname,
+                  UPPER (catch.lhscode) AS lhscode,
+                  SUM (catch.totalcatchnum) AS totalcatchnum,
+                  SUM (catch.totalcatchwt) AS totalcatchwt
+             FROM ema.BASISFISH_Event EVENT
+                  INNER JOIN ema.BASISFISH_EVENTEFFORT EVENTEFFORT
+                     ON     (Event.EventCode = EVENTEFFORT.EventCode)
+                        AND (Event.StationID = EVENTEFFORT.StationID)
+                  INNER JOIN EMA.BASISFISH_CATCH CATCH
+                     ON     (Event.EventCode = Catch.EventCode)
+                        AND (Event.StationID = Catch.StationID)
+                  INNER JOIN EMA.BASISFISH_SPECIES SPECIES
+                     ON Species.TSN = Catch.SpeciesTSN
+            WHERE (    ( (Event.SampleYear) >= 2002)
+                   AND (   NOT (Event.TrawlPERformance) = 'A'
+                        OR (Event.TrawlPERformance) = 'U')--AND ( (Event.EQ_LATITUDE) BETWEEN 60 AND 66.5));
+                                                          /*replace with bind variable*/
+                                                          /*AND ( (Event.EQ_LATITUDE) BETWEEN :minlat AND :maxlat)*/
+                  )
+         GROUP BY Event.StationID,
+                  Event.EventCode,
+                  Event.SampleYear,
+                  Event.GearCode,
+                  Event.TrawlPERformance,
+                  Event.EQ_LATITUDE,
+                  Event.EQ_LONGITUDE,
+                  EVENTEFFORT.HaversineDistance2,
+                  EVENTEFFORT.AvgNetHorizontalOpening,
+                  EVENTEFFORT.Effort_area_km2,
+                  species.commonname,
+                  species.tsn,
+                  catch.lhscode),
+     cjoin
+     AS (SELECT e.*, s.*
+           FROM    (SELECT DISTINCT
+                           stationid,
+                           eventcode,
+                           sampleyear,
+                           gearcode,
+                           trawlperformance AS trawlperformance_code,
+                           eq_latitude,
+                           eq_longitude,
+                           haversinedistance2,
+                           avgnethorizontalopening,
+                           effort_area_km2
+                      FROM speccatch) e
+                CROSS JOIN
+                   (SELECT DISTINCT
+                           tsn,
+                           commonname AS speciesname,
+                           UPPER (lhscode) AS lhscode
+                      FROM speccatch) s)
+SELECT cj.*,
+       tg.description AS gear_description,
+       tp.trawlperformance,
+       lhs.description AS lifehistory_stage,
+       NVL (sc.totalcatchnum, 0) AS totalcatchnum,
+       NVL (sc.totalcatchwt, 0) AS totalcatchwt
+  FROM cjoin cj
+       LEFT JOIN speccatch sc
+          ON     cj.stationid = sc.stationid
+             AND cj.eventcode = sc.eventcode
+             AND cj.tsn = sc.tsn
+             AND cj.lhscode = sc.lhscode
+       LEFT JOIN ema.basisfish_lifehistorystage lhs
+          ON cj.lhscode = lhs.code
+       LEFT JOIN ema.basisfish_trawlperformance tp
+          ON cj.trawlperformance_code = tp.trawlperformancecode
+       LEFT JOIN ema.basisfish_trawlgear tg
+          ON cj.gearcode = tg.code
+               where cj.sampleyear between nvl(:startyear, 2000)and nvl(:endyear, 3000) and
+          cj.tsn in (select * from table(apex_string.split(nvl(:tsn, cj.tsn),','))) and
+          cj.eq_latitude between nvl(:minlat, 0)and nvl(:maxlat, 90);
+  
+```
+  
+  
+  
