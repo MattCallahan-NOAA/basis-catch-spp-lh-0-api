@@ -2,7 +2,7 @@
 title: "BASIS survey: catch by species and life history stage with 0s"
 author: "Matt Callahan-AKFIN"
 date: "3/16/2022"
-output: word_document
+output: html_document
 ---
 
 <br>
@@ -64,7 +64,7 @@ The basis_catch web service provides BASIS survey catch level information by spe
 ## Background 
 This query was designed so EMA scientists could easily share BASIS data without needing logins, VPN connections, etc. 
 
-Something about BASIS...
+This document assumes the user is familiar with BASIS survey structure and data.
 
 ## Data Sources
 This web service queries the basisfish_event, basisfish_catch, basisfish_lifehistorystage, basisfish_trawlgear, and basisfish_trawl_performance tables in the EMA schema. Data includes catches of zero. See below for query logic. 
